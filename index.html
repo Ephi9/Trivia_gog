@@ -223,6 +223,20 @@
         .fade-in {
             animation: fadeIn 0.4s ease-out forwards;
         }
+
+        /* Custom Scrollbar */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+        }
     </style>
 </head>
 
@@ -230,49 +244,33 @@
 
     <!-- START SCREEN -->
     <div id="start-screen" class="game-container">
-        <h1 class="text-3xl md:text-5xl mb-6 tracking-tight">GAME OF GAMES</h1>
+        <h1
+            class="text-4xl md:text-6xl mb-8 tracking-tight font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500">
+            GAME OF GAMES</h1>
 
-        <div class="mb-6 w-full max-w-md mx-auto">
-            <div class="bg-black/20 p-6 rounded-xl border border-gray-700 backdrop-blur-sm">
-                <div class="flex items-center justify-between mb-4">
-                    <label class="text-sm uppercase tracking-widest opacity-80 font-semibold">Number of Teams</label>
-                    <input type="number" id="team-count-input" value="3" min="1" max="20"
-                        class="bg-gray-800 border border-gray-600 rounded px-3 py-1 w-20 text-center text-white focus:border-indigo-500 focus:outline-none transition-colors"
-                        onchange="updateTeamInputs()">
-                </div>
-
-                <div id="team-names-container" class="space-y-3 max-h-[300px] overflow-y-auto custom-scrollbar pr-2">
-                    <!-- Dynamic Inputs Generated Here -->
-                </div>
+        <div class="mb-8 w-full max-w-md mx-auto">
+            <!-- Clean inputs without extra box -->
+            <div class="flex items-center justify-between mb-6 bg-black/40 p-4 rounded-lg border border-gray-700">
+                <label class="text-sm uppercase tracking-widest opacity-90 font-bold">Number of Teams</label>
+                <input type="number" id="team-count-input" value="3" min="2" max="10"
+                    class="bg-gray-800 border-2 border-gray-600 rounded-lg px-4 py-2 w-24 text-center text-xl text-white focus:border-indigo-500 focus:outline-none transition-all"
+                    onchange="updateTeamInputs()">
             </div>
 
-            <div class="mt-4 text-center">
-                <p class="text-xs opacity-50 uppercase tracking-widest">3 Questions Per Team</p>
+            <div id="team-names-container" class="space-y-3 max-h-[300px] overflow-y-auto custom-scrollbar pr-2 mb-6">
+                <!-- Dynamic Inputs Generated Here -->
+            </div>
+
+            <div class="mt-4 text-center space-y-1">
+                <p class="text-xs opacity-60 uppercase tracking-widest">3 Rounds • 3 Questions/Team/Round</p>
+                <p class="text-xs opacity-60 uppercase tracking-widest">Correct: +10 | Pass: +5 | Timer: 20s</p>
             </div>
         </div>
 
         <button onclick="startGame()"
-            class="btn-primary text-lg px-8 py-4 w-full max-w-xs mx-auto block hover:scale-105 transform transition-transform">INITIALIZE
-            EVENT</button>
-    </div>
-
-    <!-- TEAM SELECTION SCREEN -->
-    <div id="team-select-screen" class="game-container hidden">
-        <h2 class="text-2xl mb-4 opacity-80">TEAM SELECTOR</h2>
-
-        <div class="mb-4 text-sm font-medium px-4 py-2 rounded-full bg-gray-800">
-            TEAMS REMAINING: <span id="teams-remaining-count" class="font-bold">10</span>
-        </div>
-
-        <div id="team-display" class="big-display">
-            READY?
-        </div>
-
-        <div id="team-controls" class="w-full max-w-xs mt-8">
-            <button id="roll-team-btn" onclick="rollForTeam()" class="btn-primary">RANDOMIZE TEAM</button>
-            <button id="start-round-btn" onclick="startRound()" class="hidden mt-4 btn-primary">START ROUND
-                &rarr;</button>
-        </div>
+            class="btn-primary text-xl px-12 py-5 w-full max-w-sm mx-auto block hover:scale-105 transform transition-transform shadow-lg shadow-indigo-500/30">
+            START EVENT
+        </button>
     </div>
 
     <!-- GAME SCREEN (QUESTIONS) -->
@@ -303,12 +301,7 @@
         </div>
 
         <div class="control-panel w-full mt-auto pt-6 border-t border-gray-700">
-            <button id="next-q-btn" class="hidden btn-primary" onclick="nextQuestionInRound()">
-                <span>NEXT QUESTION &rarr;</span>
-            </button>
-            <button id="end-round-btn" class="hidden" onclick="finishTeamRound()">
-                <span>FINISH ROUND</span>
-            </button>
+            <!-- Dynamic Actions -->
         </div>
     </div>
 
@@ -394,14 +387,29 @@
             question: "./assets/bg_question.png"
         };
 
-        // ==========================================
-        // AUDIO SYSTEM (Web Audio API)
-        // ==========================================
+        // Settings
+        const QUESTIONS_PER_ROUND = 3;
+        const TIMER_DURATION = 20; // seconds
+        const MAX_ROUNDS = 3;
+
+        // State
+        let teams = []; // { name: "Team 1", score: 0, active: true }
+        let currentRound = 1;
+        let currentTeamIndex = 0; // Index in `teams` array
+        let currentQuestionQuota = 0; // Tracks questions answered by current team in this round
+        let usedQuestions = [];
+        let timerInterval = null;
+        let isTimerRunning = false;
+        let currentQuestion = null;
+        let passingMode = false; // If true, we are in "Passed Question" state
+        let buzzerRoundMode = false;
+
+        // Audio
         class SoundManager {
             constructor() {
                 this.ctx = new (window.AudioContext || window.webkitAudioContext)();
                 this.masterGain = this.ctx.createGain();
-                this.masterGain.gain.value = 0.2; // Moderate volume
+                this.masterGain.gain.value = 0.2;
                 this.masterGain.connect(this.ctx.destination);
                 this.initialized = false;
             }
@@ -430,89 +438,44 @@
                 osc.stop(now + duration);
             }
 
-            playHover() {
-                // High blip
-                this.playTone(800, 'sine', 0.05);
-            }
-
-            playClick() {
-                // Mechanical click
-                this.playTone(400, 'square', 0.05);
-            }
-
+            playClick() { this.playTone(400, 'square', 0.05); }
             playSuccess() {
-                // Major arpeggio
-                this.playTone(523.25, 'sine', 0.2, 0); // C5
-                this.playTone(659.25, 'sine', 0.2, 0.1); // E5
-                this.playTone(783.99, 'sine', 0.4, 0.2); // G5
+                this.playTone(523.25, 'sine', 0.1, 0);
+                this.playTone(659.25, 'sine', 0.1, 0.1);
+                this.playTone(783.99, 'sine', 0.2, 0.2);
             }
-
             playFailure() {
-                // Descending dissonance
-                this.playTone(150, 'sawtooth', 0.3, 0);
-                this.playTone(100, 'sawtooth', 0.4, 0.15);
+                this.playTone(150, 'sawtooth', 0.2, 0);
+                this.playTone(100, 'sawtooth', 0.3, 0.15);
             }
-
-            playSpin() {
-                // Ticking sound
-                this.playTone(1200, 'triangle', 0.03);
-            }
+            playTick() { this.playTone(800, 'sine', 0.03); }
+            playBuzzer() { this.playTone(100, 'sawtooth', 0.5); }
         }
 
         const soundManager = new SoundManager();
-
-        // Global Event Delegation for Audio
-        document.addEventListener('click', (e) => {
-            soundManager.init(); // Ensure context is running
-            if (e.target.closest('button')) {
-                soundManager.playClick();
-            }
-        });
-
-        document.addEventListener('mouseover', (e) => {
-            if (e.target.closest('button') && !e.target.closest('button').disabled) {
-                soundManager.playHover();
-            }
-        });
-
-        let availableTeams = [];
-        let usedQuestions = []; // Global store of used question IDs
-        let currentTeam = null;
-        let currentTeamQuestionCount = 0;
-        const maxQuestionsPerRound = 3;
+        document.addEventListener('click', () => soundManager.init());
 
         // DOM ELEMENTS
         const startScreen = document.getElementById('start-screen');
-        const teamSelectScreen = document.getElementById('team-select-screen');
         const gameScreen = document.getElementById('game-screen');
         const endScreen = document.getElementById('end-screen');
 
-        // Team Select DOM
-        const teamDisplay = document.getElementById('team-display');
-        const rollTeamBtn = document.getElementById('roll-team-btn');
-        const startRoundBtn = document.getElementById('start-round-btn');
-        const teamsRemainingCount = document.getElementById('teams-remaining-count');
-
-        // Game DOM
+        const currentTeamNameDisplay = document.getElementById('current-team-name');
+        const qProgressDisplay = document.getElementById('q-progress');
         const randDisplay = document.getElementById('randomizer-display');
         const quizArea = document.getElementById('quiz-area');
         const qText = document.getElementById('question-text');
         const optsContainer = document.getElementById('options-container');
-        const nextQBtn = document.getElementById('next-q-btn');
-        const endRoundBtn = document.getElementById('end-round-btn');
         const timerBar = document.getElementById('timer-bar');
         const feedbackMsg = document.getElementById('feedback-msg');
-        const currentTeamNameDisplay = document.getElementById('current-team-name');
-        const qProgressDisplay = document.getElementById('q-progress');
+        const controlPanel = document.querySelector('#game-screen .control-panel');
 
         // ==========================================
-        // INITIALIZATION LOGIC
+        // INITIALIZATION
         // ==========================================
 
-        // Populate inputs on load
         window.onload = function () {
             updateTeamInputs();
-            // Set initial background for start screen
             document.body.style.backgroundImage = `url('${backgrounds.teamSelect}')`;
         };
 
@@ -520,13 +483,11 @@
             const countInput = document.getElementById('team-count-input');
             const container = document.getElementById('team-names-container');
             let count = parseInt(countInput.value);
-
-            // Limit bounds
-            if (count < 1) count = 1;
-            if (count > 20) count = 20;
+            if (count < 2) count = 2; // Min 2 teams for buzzer round
+            if (count > 10) count = 10;
             countInput.value = count;
 
-            container.innerHTML = ''; // Clear existing
+            container.innerHTML = '';
 
             for (let i = 1; i <= count; i++) {
                 const div = document.createElement('div');
@@ -540,8 +501,6 @@
                 input.type = "text";
                 input.className = "team-name-input flex-1 bg-gray-900 border border-gray-700 rounded px-3 py-2 text-sm text-white focus:border-indigo-500 focus:outline-none placeholder-gray-600 transition-colors";
                 input.placeholder = `Team ${i} Name`;
-
-                // Set default values for first 3 inputs if requested
                 if (i === 1) input.value = "Test1";
                 if (i === 2) input.value = "Test2";
                 if (i === 3) input.value = "Test3";
@@ -553,275 +512,385 @@
         }
 
         function startGame() {
-            // Collect Team Names
+            // Initialize Teams
+            teams = [];
             const inputs = document.querySelectorAll('.team-name-input');
-            availableTeams = [];
-
             inputs.forEach((input, index) => {
                 const name = input.value.trim() || `Team ${index + 1}`;
-                availableTeams.push(name);
+                teams.push({ name: name, score: 0, roundsPlayed: 0 });
             });
 
-            goToTeamSelect();
-        }
+            // Setup Game
+            currentRound = 1;
+            currentTeamIndex = 0;
+            currentQuestionQuota = 0;
+            usedQuestions = [];
 
-        // ==========================================
-        // NAVIGATION & LOGIC
-        // ==========================================
-
-        function goToTeamSelect() {
             startScreen.classList.add('hidden');
-            gameScreen.classList.add('hidden');
-            teamSelectScreen.classList.remove('hidden');
+            gameScreen.classList.remove('hidden');
+            document.body.style.backgroundImage = `url('${backgrounds.question}')`; // Consistent background
 
-            // Set background to team select
-            document.body.style.backgroundImage = `url('${backgrounds.teamSelect}')`;
-
-            resetTeamSelectUI();
+            startRound();
         }
 
-        function resetTeamSelectUI() {
-            teamDisplay.innerText = "READY?";
-            rollTeamBtn.classList.remove('hidden');
-            startRoundBtn.classList.add('hidden');
-            teamsRemainingCount.innerText = availableTeams.length;
-
-            if (availableTeams.length === 0) {
-                endGame();
-            }
-        }
-
-        // --- TEAM SELECTION ---
-
-        function rollForTeam() {
-            if (availableTeams.length === 0) return;
-
-            rollTeamBtn.disabled = true;
-            let counter = 0;
-            const maxRolls = 20;
-
-            // Animation
-            const interval = setInterval(() => {
-                const randomTemp = availableTeams[Math.floor(Math.random() * availableTeams.length)];
-                teamDisplay.innerText = randomTemp;
-                soundManager.playSpin(); // Sound effect
-                counter++;
-
-                if (counter > maxRolls) {
-                    clearInterval(interval);
-                    finalizeTeamSelection();
-                }
-            }, 80);
-        }
-
-        function finalizeTeamSelection() {
-            // Pick random team and remove from array
-            const randomIndex = Math.floor(Math.random() * availableTeams.length);
-            currentTeam = availableTeams[randomIndex];
-            availableTeams.splice(randomIndex, 1); // Remove it
-
-            teamDisplay.innerText = currentTeam + "\nSELECTED";
-            teamsRemainingCount.innerText = availableTeams.length;
-
-            rollTeamBtn.classList.add('hidden');
-            rollTeamBtn.disabled = false;
-            startRoundBtn.classList.remove('hidden');
-        }
+        // ==========================================
+        // CORE GAMEPLAY LOOPS
+        // ==========================================
 
         function startRound() {
-            currentTeamQuestionCount = 0;
-            teamSelectScreen.classList.add('hidden');
-            gameScreen.classList.remove('hidden');
-
-            currentTeamNameDisplay.innerText = currentTeam;
-
-            // Start the flow for the first question
-            prepareNextQuestion();
-        }
-
-        // --- GAMEPLAY / QUESTION ROUNDS ---
-
-        function prepareNextQuestion() {
-            currentTeamQuestionCount++;
-
-            if (currentTeamQuestionCount > maxQuestionsPerRound) {
-                finishTeamRound();
+            if (currentRound > MAX_ROUNDS) {
+                initBuzzerRound();
                 return;
             }
 
-            // Update UI
-            qProgressDisplay.innerText = `Q: ${currentTeamQuestionCount}/${maxQuestionsPerRound}`;
-
-            // Hide previous question / Show Randomizer waiting state
-            quizArea.classList.add('hidden');
-            randDisplay.classList.remove('hidden');
-            randDisplay.innerText = "CLICK TO SPIN";
-
-            // Set Background to Randomizer
-            document.body.style.backgroundImage = `url('${backgrounds.randomizer}')`;
-
-            // Buttons logic
-            nextQBtn.classList.add('hidden');
-            endRoundBtn.classList.add('hidden');
-
-            // Spin Button
-            const spinBtn = document.createElement('button');
-            spinBtn.id = 'spin-btn';
-            spinBtn.innerText = "SPIN RANDOMIZER";
-            spinBtn.className = "btn-primary"; // Use new class
-            spinBtn.onclick = () => {
-                spinBtn.remove();
-                runQuestionRandomizer();
-            };
-
-            // Clear control panel and add spin button
-            const panel = document.querySelector('#game-screen .control-panel');
-            panel.innerHTML = '';
-            panel.appendChild(spinBtn);
+            // Round Announcement Overlay? For now just start first turn.
+            startTurn();
         }
 
-        function runQuestionRandomizer() {
-            let speed = 50;
-            let counter = 0;
-            const maxCounts = 20;
+        function startTurn() {
+            const team = teams[currentTeamIndex];
 
-            const interval = setInterval(() => {
-                // Visual number shuffle
-                const rNum = Math.floor(Math.random() * questionBank.length) + 1;
-                randDisplay.innerText = rNum;
-                soundManager.playSpin(); // Sound effect
-                counter++;
+            // Check quota
+            if (currentQuestionQuota >= QUESTIONS_PER_ROUND) {
+                // Team done with this round, move to next team
+                currentTeamIndex++;
+                currentQuestionQuota = 0;
 
-                if (counter > maxCounts) {
-                    clearInterval(interval);
-                    selectAndShowQuestion();
+                if (currentTeamIndex >= teams.length) {
+                    // Round Over
+                    currentTeamIndex = 0;
+                    currentRound++;
+                    startRound();
+                    return;
                 }
-            }, speed);
-        }
 
-        function selectAndShowQuestion() {
-            // Filter available questions (Global no repeats)
-            let availableIndices = questionBank.map((_, index) => index)
-                .filter(index => !usedQuestions.includes(index));
-
-            if (availableIndices.length === 0) {
-                randDisplay.innerText = "EMPTY";
-                alert("No more unique questions available! Resetting pool.");
-                usedQuestions = [];
-                availableIndices = questionBank.map((_, index) => index);
+                startTurn(); // Recurse for next team
+                return;
             }
 
-            const randIndex = availableIndices[Math.floor(Math.random() * availableIndices.length)];
-            usedQuestions.push(randIndex);
+            // Prepare UI
+            passingMode = false;
+            updateGameHeader();
+            showRandomizerIntermission();
+        }
 
-            const qData = questionBank[randIndex];
+        function updateGameHeader() {
+            const team = teams[currentTeamIndex];
+            if (buzzerRoundMode) {
+                currentTeamNameDisplay.innerText = "BUZZER ROUND";
+                qProgressDisplay.innerText = "Hit Buzzer!";
+                qProgressDisplay.className = "bg-red-900/80 px-4 py-1 rounded-full text-red-200 border border-red-500 animate-pulse";
+            } else {
+                currentTeamNameDisplay.innerText = `${team.name} [${team.score} PTS]`;
+                qProgressDisplay.innerText = `R${currentRound} | Q${currentQuestionQuota + 1}/${QUESTIONS_PER_ROUND}`;
+                qProgressDisplay.className = "bg-gray-800 px-3 py-1 rounded-full";
+            }
+        }
 
-            randDisplay.innerText = `Q#${qData.id}`;
+        function showRandomizerIntermission() {
+            quizArea.classList.add('hidden');
+            randDisplay.classList.remove('hidden');
+            randDisplay.innerText = "NEXT QUESTION";
 
-            // Set Background to Question Background
-            document.body.style.backgroundImage = `url('${backgrounds.question}')`;
+            controlPanel.innerHTML = ''; // Clear buttons
 
+            // Auto-roll after short delay
             setTimeout(() => {
-                displayQuestionContent(qData);
+                rollQuestion();
             }, 1000);
         }
 
-        function displayQuestionContent(qData) {
-            randDisplay.classList.add('hidden'); // Hide the number
-            quizArea.classList.remove('hidden'); // Show Q box
+        function rollQuestion() {
+            let availableIndices = questionBank.map((_, index) => index).filter(i => !usedQuestions.includes(i));
+            if (availableIndices.length === 0) {
+                usedQuestions = []; // Reset if out
+                availableIndices = questionBank.map((_, index) => index);
+            }
 
-            // Reset state
-            timerBar.style.width = '0%';
-            timerBar.style.transition = 'none';
+            const rIndex = availableIndices[Math.floor(Math.random() * availableIndices.length)];
+            usedQuestions.push(rIndex);
+            currentQuestion = questionBank[rIndex];
+
+            randDisplay.innerText = `Q#${currentQuestion.id}`;
+
+            setTimeout(() => {
+                randDisplay.classList.add('hidden');
+                quizArea.classList.remove('hidden');
+                displayQuestion(currentQuestion);
+            }, 1000);
+        }
+
+        function displayQuestion(q) {
+            qText.innerText = q.q;
             optsContainer.innerHTML = '';
             feedbackMsg.innerText = '';
-            qText.innerText = qData.q;
 
             // Generate Options
-            qData.options.forEach((opt, index) => {
+            if (buzzerRoundMode) {
+                // Buzzer round only shows question, options hidden until buzzer? 
+                // Or just show full question. Let's show options but disable interactions for manual scoring.
+                optsContainer.style.pointerEvents = 'none'; // Manual scoring only
+            } else {
+                optsContainer.style.pointerEvents = 'auto';
+            }
+
+            q.options.forEach((opt, index) => {
                 const btn = document.createElement('button');
                 btn.innerHTML = `<span>${opt}</span>`;
-                btn.disabled = true;
-                btn.onclick = () => handleAnswer(index, qData.correct, btn);
+                if (!buzzerRoundMode) {
+                    btn.onclick = () => handleAnswerAttempt(index);
+                }
                 optsContainer.appendChild(btn);
             });
 
-            // Timer Animation
-            setTimeout(() => {
-                timerBar.style.transition = 'width 3s linear';
-                timerBar.style.width = '100%';
-            }, 100);
-
-            // Unlock Buttons
-            setTimeout(() => {
-                const buttons = optsContainer.querySelectorAll('button');
-                buttons.forEach(b => {
-                    b.disabled = false;
-                    b.style.cursor = 'pointer';
-                });
-                feedbackMsg.innerText = "SELECT ANSWER";
-            }, 3000);
+            if (buzzerRoundMode) {
+                renderBuzzerControls();
+            } else {
+                startTimer();
+            }
         }
 
-        function handleAnswer(selectedIndex, correctIndex, btnElement) {
-            const allBtns = optsContainer.querySelectorAll('button');
-            allBtns.forEach(b => b.disabled = true); // Lock all
+        // ==========================================
+        // TIMER & SCORING (NORMAL ROUNDS)
+        // ==========================================
 
-            if (selectedIndex === correctIndex) {
-                btnElement.style.background = 'var(--success-color)';
-                btnElement.style.color = '#fff';
-                btnElement.style.borderColor = 'var(--success-color)';
-                feedbackMsg.innerText = "CORRECT!";
-                feedbackMsg.style.color = 'var(--success-color)';
+        function startTimer() {
+            clearInterval(timerInterval);
+            isTimerRunning = true;
+            let timeLeft = TIMER_DURATION;
+
+            timerBar.style.width = '100%';
+            timerBar.style.transition = `width ${TIMER_DURATION}s linear`;
+
+            // Force reflow
+            void timerBar.offsetWidth;
+
+            timerBar.style.width = '0%';
+
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    handleTimeUp();
+                } else if (timeLeft <= 5) {
+                    soundManager.playTick();
+                }
+            }, 1000);
+        }
+
+        function handleAnswerAttempt(selectedIndex) {
+            if (!isTimerRunning) return; // Answered or timeout
+            clearInterval(timerInterval);
+            isTimerRunning = false;
+            timerBar.style.transition = 'none';
+
+            const correct = selectedIndex === currentQuestion.correct;
+            const buttons = optsContainer.querySelectorAll('button');
+
+            buttons.forEach(b => b.disabled = true);
+
+            if (correct) {
+                // CORRECT (+10)
+                buttons[selectedIndex].style.background = 'var(--success-color)';
+                teams[currentTeamIndex].score += 10;
+                feedbackMsg.innerText = "CORRECT! +10 PTS";
+                feedbackMsg.style.color = "var(--success-color)";
                 soundManager.playSuccess();
+
+                // End Turn Button
+                showNextButton("NEXT QUESTION \u2192", () => {
+                    currentQuestionQuota++;
+                    startTurn();
+                });
             } else {
-                btnElement.style.background = 'var(--error-color)';
-                btnElement.style.color = '#fff';
-                btnElement.style.borderColor = 'var(--error-color)';
-                feedbackMsg.innerText = "INCORRECT";
-                feedbackMsg.style.color = 'var(--error-color)';
+                // WRONG (0) -> PASS
+                buttons[selectedIndex].style.background = 'var(--error-color)';
+                buttons[currentQuestion.correct].style.borderColor = 'var(--success-color)'; // Reveal correct
+
+                feedbackMsg.innerText = "INCORRECT! PASSING...";
+                feedbackMsg.style.color = "var(--error-color)";
                 soundManager.playFailure();
 
-                // Show correct
-                allBtns[correctIndex].style.background = 'var(--success-color)';
-                allBtns[correctIndex].style.color = '#fff';
-                allBtns[correctIndex].style.borderColor = 'var(--success-color)';
-            }
-
-            // Restore Control Panel buttons
-            const panel = document.querySelector('#game-screen .control-panel');
-            panel.innerHTML = '';
-
-            // Decide which button to show
-            if (currentTeamQuestionCount < maxQuestionsPerRound) {
-                // Show Next Question Button
-                const nextBtn = document.createElement('button');
-                nextBtn.innerText = "NEXT QUESTION \u2192";
-                nextBtn.className = "btn-primary";
-                nextBtn.onclick = prepareNextQuestion;
-                panel.appendChild(nextBtn);
-            } else {
-                // Show Finish Round Button
-                const finishBtn = document.createElement('button');
-                finishBtn.innerText = "RETURN TO TEAM SELECT";
-                finishBtn.onclick = finishTeamRound;
-                panel.appendChild(finishBtn);
+                // Show Pass UI
+                setTimeout(() => {
+                    initiatePass();
+                }, 1500);
             }
         }
 
-        function nextQuestionInRound() {
-            prepareNextQuestion();
+        function handleTimeUp() {
+            isTimerRunning = false;
+            const buttons = optsContainer.querySelectorAll('button');
+            buttons.forEach(b => b.disabled = true);
+
+            feedbackMsg.innerText = "TIME'S UP! PASSING...";
+            feedbackMsg.style.color = "var(--text-secondary)";
+            soundManager.playFailure();
+
+            setTimeout(() => {
+                initiatePass();
+            }, 1500);
         }
 
-        function finishTeamRound() {
-            goToTeamSelect();
+        function initiatePass() {
+            // Determine next team index
+            // Simple logic: Next Team in array (wrapping)
+            let passIndex = (currentTeamIndex + 1) % teams.length;
+            const passingTeam = teams[passIndex];
+
+            passingMode = true;
+            quizArea.classList.add('hidden'); // Hide Q temporarily to flash screen
+
+            // Show Pass Screen overlay
+            const overlay = document.createElement('div');
+            overlay.className = "absolute inset-0 bg-black/90 z-50 flex flex-col items-center justify-center fade-in";
+            overlay.innerHTML = `
+                <h2 class="text-3xl font-bold mb-4 text-yellow-400">QUESTION PASSED</h2>
+                <p class="text-xl mb-6">To: <span class="font-bold text-white">${passingTeam.name}</span></p>
+                <div class="flex gap-4">
+                    <button id="pass-correct-btn" class="btn-primary bg-green-600 hover:bg-green-500 border-none">ANSWERED (+5)</button>
+                    <button id="pass-fail-btn" class="btn-primary bg-red-600 hover:bg-red-500 border-none">FAILED (0)</button>
+                </div>
+            `;
+            gameScreen.appendChild(overlay);
+
+            document.getElementById('pass-correct-btn').onclick = () => {
+                teams[passIndex].score += 5;
+                overlay.remove();
+                completePass("PASSED ANSWER: +5 PTS");
+            };
+
+            document.getElementById('pass-fail-btn').onclick = () => {
+                overlay.remove();
+                handleRecursivePass(passIndex);
+            };
         }
 
-        function endGame() {
-            teamSelectScreen.classList.add('hidden');
-            endScreen.classList.remove('hidden');
+        function handleRecursivePass(currentIndex) {
+            let nextIndex = (currentIndex + 1) % teams.length;
+
+            // If we looped back to the original team, question dies.
+            if (nextIndex === currentTeamIndex) {
+                completePass("NOBODY ANSWERED correctly.");
+                return;
+            }
+
+            const nextTeam = teams[nextIndex];
+
+            const overlay = document.createElement('div');
+            overlay.className = "absolute inset-0 bg-black/90 z-50 flex flex-col items-center justify-center";
+            overlay.innerHTML = `
+                <h2 class="text-3xl font-bold mb-4 text-yellow-400">PASSED AGAIN</h2>
+                <p class="text-xl mb-6">To: <span class="font-bold text-white">${nextTeam.name}</span></p>
+                <div class="flex gap-4">
+                    <button id="pass-correct-btn" class="btn-primary bg-green-600 hover:bg-green-500 border-none">ANSWERED (+5)</button>
+                    <button id="pass-fail-btn" class="btn-primary bg-red-600 hover:bg-red-500 border-none">FAILED (0)</button>
+                </div>
+            `;
+            gameScreen.appendChild(overlay);
+
+            document.getElementById('pass-correct-btn').onclick = () => {
+                teams[nextIndex].score += 5;
+                overlay.remove();
+                completePass("PASSED ANSWER: +5 PTS");
+            };
+
+            document.getElementById('pass-fail-btn').onclick = () => {
+                overlay.remove();
+                handleRecursivePass(nextIndex);
+            };
         }
 
+        function completePass(msg) {
+            quizArea.classList.remove('hidden');
+            feedbackMsg.innerText = msg;
+
+            // Done with this question slot
+            showNextButton("NEXT QUESTION \u2192", () => {
+                currentQuestionQuota++;
+                startTurn();
+            });
+        }
+
+        function showNextButton(text, cb) {
+            controlPanel.innerHTML = '';
+            const btn = document.createElement('button');
+            btn.className = 'btn-primary w-full max-w-sm';
+            btn.innerText = text;
+            btn.onclick = cb;
+            controlPanel.appendChild(btn);
+        }
+
+        // ==========================================
+        // BUZZER ROUND
+        // ==========================================
+
+        function initBuzzerRound() {
+            buzzerRoundMode = true;
+
+            // Sort teams by score
+            const sortedTeams = [...teams].sort((a, b) => b.score - a.score);
+            const top2 = sortedTeams.slice(0, 2);
+            teams = top2; // Filter down to top 2
+
+            // Announce
+            quizArea.classList.add('hidden');
+            randDisplay.classList.remove('hidden');
+            randDisplay.innerHTML = `<div class="text-center text-4xl">BUZZER ROUND<br><span class="text-2xl text-yellow-400">${teams[0].name} vs ${teams[1].name}</span></div>`;
+
+            showNextButton("START BUZZER ROUND", () => {
+                rollQuestion();
+            });
+        }
+
+        function renderBuzzerControls() {
+            controlPanel.innerHTML = '';
+
+            const div = document.createElement('div');
+            div.className = "grid grid-cols-2 gap-4 w-full";
+
+            teams.forEach(team => {
+                const teamCol = document.createElement('div');
+                teamCol.className = "flex flex-col gap-2 p-2 border border-gray-700 rounded bg-black/40";
+                teamCol.innerHTML = `<h3 class="font-bold text-center mb-2 underline">${team.name}</h3>`;
+
+                const winBtn = document.createElement('button');
+                winBtn.className = "bg-green-700 text-white text-sm py-2 px-1 rounded hover:bg-green-600";
+                winBtn.innerText = "WIN (+10)";
+                winBtn.onclick = () => handleBuzzerScore(team, 10);
+
+                const wrongBtn = document.createElement('button');
+                wrongBtn.className = "bg-red-700 text-white text-sm py-2 px-1 rounded hover:bg-red-600";
+                wrongBtn.innerText = "WRONG (-5)";
+                wrongBtn.onclick = () => handleBuzzerScore(team, -5);
+
+                teamCol.appendChild(winBtn);
+                teamCol.appendChild(wrongBtn);
+                div.appendChild(teamCol);
+            });
+
+            // Pass button
+            const passBtn = document.createElement('button');
+            passBtn.className = "col-span-2 bg-yellow-700 text-white py-2 rounded font-bold hover:bg-yellow-600 mt-2";
+            passBtn.innerText = "PASSED (+5)";
+            passBtn.onclick = () => {
+                alert("Who answered? (Manually add points if needed, else assumes logic)");
+                showNextButton("NEXT BUZZER Q", () => rollQuestion());
+            };
+
+            // controlPanel.appendChild(div);
+            // Reinsert div
+            controlPanel.appendChild(div);
+        }
+
+        function handleBuzzerScore(team, points) {
+            team.score += points;
+            feedbackMsg.innerText = `${team.name}: ${points > 0 ? '+' : ''}${points} PTS`;
+            feedbackMsg.style.color = points > 0 ? "var(--success-color)" : "var(--error-color)";
+
+            // After manual score, next question
+            showNextButton("NEXT QUESTION", () => rollQuestion());
+        }
     </script>
 </body>
 

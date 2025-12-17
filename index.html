@@ -1,0 +1,832 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game of Games: Team Edition</title>
+    <!-- Importing Modern Fonts: Outfit (Headings) and Inter (Body) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@500;700;800&display=swap"
+        rel="stylesheet">
+
+    <!-- Tailwind for layout -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <style>
+        :root {
+            /* --- THE VISIONARY (Dark Mode Only) --- */
+            --bg-color: #0B0F19;
+            /* Deep Dark Blue */
+            --surface-color: #151B2B;
+            /* Dark Blue/Gray */
+            --text-primary: #F1F5F9;
+            /* Slate 100 */
+            --text-secondary: #94A3B8;
+            /* Slate 400 */
+            --accent-primary: #6366F1;
+            /* Electric Indigo */
+            --accent-secondary: #06B6D4;
+            /* Neon Cyan */
+            --accent-glow: rgba(99, 102, 241, 0.4);
+            --border-color: rgba(255, 255, 255, 0.1);
+            --success-color: #34D399;
+            /* Emerald 400 */
+            --error-color: #F87171;
+            /* Red 400 */
+            --card-shadow: 0 20px 50px -12px rgba(0, 0, 0, 0.7);
+            --glass-bg: rgba(21, 27, 43, 0.90);
+            --glass-border: rgba(255, 255, 255, 0.08);
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: var(--bg-color);
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+            color: var(--text-primary);
+            font-family: 'Inter', sans-serif;
+            overflow-x: hidden;
+            transition: background-color 0.4s ease, color 0.4s ease;
+        }
+
+        h1,
+        h2,
+        h3,
+        .big-display {
+            font-family: 'Outfit', sans-serif;
+        }
+
+        /* --- UI Containers --- */
+        .game-container {
+            width: 95%;
+            max-width: 700px;
+            padding: 2.5rem;
+            border-radius: 24px;
+            text-align: center;
+            position: relative;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            box-shadow: var(--card-shadow);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            min-height: 600px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* --- Typography & Elements --- */
+        .big-display {
+            font-size: 4.5rem;
+            font-weight: 800;
+            margin: 20px 0;
+            min-height: 120px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1.1;
+            background: linear-gradient(135deg, var(--text-primary) 0%, var(--text-secondary) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -0.02em;
+        }
+
+        .question-box {
+            font-size: 1.35rem;
+            font-weight: 500;
+            line-height: 1.5;
+            margin-bottom: 30px;
+            padding: 24px;
+            width: 100%;
+            border: 1px solid var(--border-color);
+            background: var(--surface-color);
+            border-radius: 16px;
+            min-height: 120px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-primary);
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.02);
+        }
+
+        .options-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 16px;
+            width: 100%;
+            margin-bottom: 24px;
+        }
+
+        @media (min-width: 640px) {
+            .options-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        button {
+            padding: 18px 24px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            width: 100%;
+            position: relative;
+            overflow: hidden;
+            border-radius: 14px;
+            background: var(--surface-color);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+            font-family: 'Outfit', sans-serif;
+            letter-spacing: 0.02em;
+        }
+
+        button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px var(--accent-glow);
+            border-color: var(--accent-primary);
+            color: var(--accent-primary);
+        }
+
+        button:active:not(:disabled) {
+            transform: translateY(0);
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            filter: grayscale(100%);
+        }
+
+        /* Primary Action Button Style */
+        .btn-primary {
+            background: var(--accent-primary);
+            color: white !important;
+            border: none;
+            box-shadow: 0 4px 12px var(--accent-glow);
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            background: var(--accent-primary);
+            /* Keep bg, just lift */
+            filter: brightness(1.1);
+            color: white !important;
+        }
+
+        /* --- Loading Bar --- */
+        .timer-container {
+            width: 100%;
+            height: 8px;
+            background: var(--border-color);
+            margin-bottom: 24px;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        #timer-bar {
+            width: 0%;
+            height: 100%;
+            background: var(--accent-primary);
+            transition: width 3s linear;
+            border-radius: 4px;
+        }
+
+        /* --- Animations --- */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .fade-in {
+            animation: fadeIn 0.4s ease-out forwards;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- START SCREEN -->
+    <div id="start-screen" class="game-container">
+        <h1 class="text-3xl md:text-5xl mb-6 tracking-tight">GAME OF GAMES</h1>
+
+        <div class="mb-6 w-full max-w-md mx-auto">
+            <div class="bg-black/20 p-6 rounded-xl border border-gray-700 backdrop-blur-sm">
+                <div class="flex items-center justify-between mb-4">
+                    <label class="text-sm uppercase tracking-widest opacity-80 font-semibold">Number of Teams</label>
+                    <input type="number" id="team-count-input" value="3" min="1" max="20"
+                        class="bg-gray-800 border border-gray-600 rounded px-3 py-1 w-20 text-center text-white focus:border-indigo-500 focus:outline-none transition-colors"
+                        onchange="updateTeamInputs()">
+                </div>
+
+                <div id="team-names-container" class="space-y-3 max-h-[300px] overflow-y-auto custom-scrollbar pr-2">
+                    <!-- Dynamic Inputs Generated Here -->
+                </div>
+            </div>
+
+            <div class="mt-4 text-center">
+                <p class="text-xs opacity-50 uppercase tracking-widest">3 Questions Per Team</p>
+            </div>
+        </div>
+
+        <button onclick="startGame()"
+            class="btn-primary text-lg px-8 py-4 w-full max-w-xs mx-auto block hover:scale-105 transform transition-transform">INITIALIZE
+            EVENT</button>
+    </div>
+
+    <!-- TEAM SELECTION SCREEN -->
+    <div id="team-select-screen" class="game-container hidden">
+        <h2 class="text-2xl mb-4 opacity-80">TEAM SELECTOR</h2>
+
+        <div class="mb-4 text-sm font-medium px-4 py-2 rounded-full bg-gray-800">
+            TEAMS REMAINING: <span id="teams-remaining-count" class="font-bold">10</span>
+        </div>
+
+        <div id="team-display" class="big-display">
+            READY?
+        </div>
+
+        <div id="team-controls" class="w-full max-w-xs mt-8">
+            <button id="roll-team-btn" onclick="rollForTeam()" class="btn-primary">RANDOMIZE TEAM</button>
+            <button id="start-round-btn" onclick="startRound()" class="hidden mt-4 btn-primary">START ROUND
+                &rarr;</button>
+        </div>
+    </div>
+
+    <!-- GAME SCREEN (QUESTIONS) -->
+    <div id="game-screen" class="game-container hidden">
+        <div
+            class="w-full flex justify-between items-center mb-4 opacity-70 text-sm font-bold border-b border-gray-700 pb-4">
+            <span id="current-team-name" class="uppercase tracking-wider">TEAM ?</span>
+            <span id="q-progress" class="bg-gray-800 px-3 py-1 rounded-full">Q: 1/3</span>
+        </div>
+
+        <!-- Random Number/ID Display -->
+        <div id="randomizer-display" class="big-display">00</div>
+
+        <div id="quiz-area" class="w-full hidden flex flex-col items-center flex-grow fade-in">
+            <div class="timer-container">
+                <div id="timer-bar"></div>
+            </div>
+
+            <div id="question-text" class="question-box">
+                <!-- Question text injected here -->
+            </div>
+
+            <div id="options-container" class="options-grid">
+                <!-- Buttons injected by JS -->
+            </div>
+
+            <div id="feedback-msg" class="h-8 mb-2 font-bold text-lg" style="color: var(--accent-primary)"></div>
+        </div>
+
+        <div class="control-panel w-full mt-auto pt-6 border-t border-gray-700">
+            <button id="next-q-btn" class="hidden btn-primary" onclick="nextQuestionInRound()">
+                <span>NEXT QUESTION &rarr;</span>
+            </button>
+            <button id="end-round-btn" class="hidden" onclick="finishTeamRound()">
+                <span>FINISH ROUND</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- FINAL SCREEN -->
+    <div id="end-screen" class="game-container hidden">
+        <h1 class="text-4xl mb-4 font-bold">EVENT COMPLETE</h1>
+        <div class="mb-8 text-xl opacity-80">
+            <p>ALL TEAMS HAVE PARTICIPATED</p>
+        </div>
+        <button onclick="location.reload()" class="btn-primary">
+            <span>RESET SYSTEM</span>
+        </button>
+    </div>
+
+    <script>
+        // ==========================================
+        // DATA: Questions
+        // ==========================================
+        const questionBank = [
+            // --- Games ---
+            { id: 1, q: "GTA VI is which major installment of the Grand Theft Auto series?", options: ["6th", "7th", "8th", "9th"], correct: 2, category: "gaming" },
+            { id: 2, q: "Name the famous Italian plumber often dressed in red.", options: ["Luigi", "Wario", "Mario", "Waluigi"], correct: 2, category: "gaming" },
+            { id: 3, q: "Wii, Xbox, and PlayStation are examples of what?", options: ["Game Engines", "Video Game Consoles", "Streaming Services", "Arcade Cabinets"], correct: 1, category: "gaming" },
+            { id: 4, q: "Which sandbox game features 'mobs', mining, and crafting?", options: ["Roblox", "Terraria", "Minecraft", "Fortnite"], correct: 2, category: "gaming" },
+            { id: 5, q: "EAFC, the football game series, was formerly known as?", options: ["PES", "Madden", "FIFA", "Winning Eleven"], correct: 2, category: "gaming" },
+            { id: 6, q: "Which Battle Royale game is famous for collabs like Travis Scott & Naruto?", options: ["PUBG", "Apex Legends", "Fortnite", "Warzone"], correct: 2, category: "gaming" },
+            { id: 7, q: "In games like Valorant and COD, what does FPS stand for?", options: ["Frames Per Second", "First Person Shooter", "Free Play System", "Fast Paced Strategy"], correct: 1, category: "gaming" },
+            { id: 8, q: "Which came first: The Pokemon Game or the Anime?", options: ["The Game", "The Anime", "Both same day", " The Manga"], correct: 0, category: "gaming" },
+            { id: 9, q: "'Gloo wall' is a term from which mobile game?", options: ["PUBG Mobile", "Free Fire", "COD Mobile", "Brawl Stars"], correct: 1, category: "gaming" },
+            { id: 10, q: "What color is Pac-Man?", options: ["Red", "Yellow", "Blue", "Pink"], correct: 1, category: "gaming" },
+            { id: 11, q: "The 'Asphalt' series is famous for what genre?", options: ["Shooting", "Racing", "Strategy", "Puzzle"], correct: 1, category: "gaming" },
+            { id: 12, q: "What does DLC stand for?", options: ["Disk Load Content", "Digital Level Code", "Downloadable Content", "Direct Link Connection"], correct: 2, category: "gaming" },
+            { id: 13, q: "Assassin's Creed: Shadows is set in which country?", options: ["China", "Egypt", "Japan", "Greece"], correct: 2, category: "gaming" },
+            { id: 14, q: "Kratos and Zeus are characters in which series?", options: ["Halo", "God of War", "Final Fantasy", "Elden Ring"], correct: 1, category: "gaming" },
+            { id: 15, q: "Elden Ring and Bloodborne are often called ____-like games.", options: ["Rogue", "Souls", "Zelda", "Metroid"], correct: 1, category: "gaming" },
+            { id: 16, q: "Captain Price is a character from which FPS series?", options: ["Battlefield", "Call of Duty", "Halo", "Destiny"], correct: 1, category: "gaming" },
+            { id: 17, q: "Night City is the setting for which game?", options: ["Cyberpunk 2077", "Watch Dogs", "GTA V", "Saints Row"], correct: 0, category: "gaming" },
+            { id: 18, q: "Which indie game features a bug knight in a fallen kingdom?", options: ["Celeste", "Hollow Knight", "Hades", "Cuphead"], correct: 1, category: "gaming" },
+            { id: 19, q: "Clash of Clans was developed by whom?", options: ["Supercell", "King", "Zynga", "Tencent"], correct: 0, category: "gaming" },
+            { id: 20, q: "Hideo Kojima is the creator of which series?", options: ["Mario", "Metal Gear", "Resident Evil", "Final Fantasy"], correct: 1, category: "gaming" },
+            // --- Books / Harry Potter ---
+            { id: 21, q: "Who is the half-brother of Hagrid?", options: ["Grawp", "Aragog", "Norbert", "Firenze"], correct: 0, category: "harry_potter" },
+            { id: 22, q: "Which object chooses the wizard in Harry Potter?", options: ["Wand", "Broom", "Cloak", "Owl"], correct: 0, category: "harry_potter" },
+            { id: 23, q: "What is the name of Percy Jackson's sword?", options: ["Sting", "Riptide", "Excalibur", "Longclaw"], correct: 1, category: "books" },
+            { id: 24, q: "Which camp does Percy Jackson attend?", options: ["Camp Jupiter", "Camp Half-Blood", "Camp Rock", "Camp Olympus"], correct: 1, category: "books" },
+            { id: 25, q: "What district is Katniss Everdeen from?", options: ["District 1", "District 12", "District 9", "The Capitol"], correct: 1, category: "books" },
+            { id: 26, q: "What is Peeta Mellark's family business?", options: ["Mining", "Bakery", "Fishing", "Medicine"], correct: 1, category: "books" },
+            { id: 27, q: "What kind of creature is Jacob Black (Twilight)?", options: ["Vampire", "Werewolf", "Wizard", "Ghost"], correct: 1, category: "books" },
+            { id: 28, q: "Who was the Half-Blood Prince?", options: ["Harry Potter", "Voldemort", "Severus Snape", "Dumbledore"], correct: 2, category: "harry_potter" },
+            { id: 29, q: "What guards the Gryffindor common room?", options: ["The Fat Lady", "A Troll", "A Dragon", "The Bloody Baron"], correct: 0, category: "harry_potter" },
+            { id: 30, q: "What is Bella Swan's full first name?", options: ["Isabella", "Annabelle", "Arabella", "Mirabella"], correct: 0, category: "books" },
+            { id: 31, q: "What ability does Edward Cullen have?", options: ["Read Minds", "See Future", "Control Fire", "Invisibility"], correct: 0, category: "books" },
+            { id: 32, q: "Who is Annabeth Chase's mother?", options: ["Aphrodite", "Athena", "Hera", "Demeter"], correct: 1, category: "books" },
+            { id: 33, q: "Who is the Director of Camp Half-Blood?", options: ["Zeus", "Chiron", "Dionysus", "Ares"], correct: 2, category: "books" },
+            { id: 34, q: "What is Finnick Odair's weapon of choice?", options: ["Trident", "Bow", "Sword", "Axe"], correct: 0, category: "books" },
+            { id: 35, q: "Which Hunger Games district specializes in technology?", options: ["District 1", "District 3", "District 7", "District 11"], correct: 1, category: "books" },
+            { id: 36, q: "Who becomes President of Panem at the end of the trilogy?", options: ["Katniss", "Coin", "Paylor", "Snow"], correct: 2, category: "books" },
+            // --- Pop Culture ---
+            { id: 37, q: "Which artist released the album 'Planet Her'?", options: ["Doja Cat", "Ariana Grande", "Dua Lipa", "SZA"], correct: 0, category: "pop_culture" },
+            { id: 38, q: "Who is the main female lead in Avatar: The Last Airbender?", options: ["Toph", "Katara", "Azula", "Suki"], correct: 1, category: "pop_culture" },
+            { id: 39, q: "What species is Chewbacca?", options: ["Ewok", "Wookiee", "Jawa", "Human"], correct: 1, category: "pop_culture" },
+            { id: 40, q: "What is the fictional continent in Game of Thrones?", options: ["Middle-earth", "Westeros", "Narnia", "Azeroth"], correct: 1, category: "game_of_thrones" },
+            { id: 41, q: "Which rapper released 'Astroworld'?", options: ["Drake", "Travis Scott", "Kanye West", "Post Malone"], correct: 1, category: "pop_culture" },
+            { id: 42, q: "Who plays Wednesday Addams in the Netflix series?", options: ["Jenna Ortega", "Millie Bobby Brown", "Zendaya", "Emma Myers"], correct: 0, category: "pop_culture" },
+            { id: 43, q: "Fire Lord Ozai is a villain in which series?", options: ["Naruto", "Avatar: The Last Airbender", "One Piece", "Dragon Ball"], correct: 1, category: "pop_culture" },
+            { id: 44, q: "Who becomes the Scarlet Witch in Marvel?", options: ["Natasha Romanoff", "Wanda Maximoff", "Jean Grey", "Storm"], correct: 1, category: "pop_culture" },
+            { id: 45, q: "Which show is a prequel to Game of Thrones?", options: ["Rings of Power", "House of the Dragon", "The Witcher", "Wheel of Time"], correct: 1, category: "game_of_thrones" },
+            { id: 46, q: "Who sings 'Vampire' (2023)?", options: ["Billie Eilish", "Olivia Rodrigo", "Taylor Swift", "Miley Cyrus"], correct: 1, category: "pop_culture" },
+            { id: 47, q: "Which game popularized the 'Floss' dance?", options: ["Fortnite", "Minecraft", "Roblox", "Overwatch"], correct: 0, category: "gaming" },
+            { id: 48, q: "What is the fictional country in Black Panther?", options: ["Zamunda", "Wakanda", "Genovia", "Latveria"], correct: 1, category: "pop_culture" },
+            { id: 49, q: "What color does Tanjiro's sword turn in Demon Slayer?", options: ["Red", "Blue", "Black", "Green"], correct: 2, category: "pop_culture" },
+            { id: 50, q: "Who created Squid Game?", options: ["Bong Joon-ho", "Hwang Dong-hyuk", "Park Chan-wook", "Lee Jung-jae"], correct: 1, category: "pop_culture" },
+            { id: 51, q: "Who won Album of the Year 4 times at the Grammys?", options: ["Beyonce", "Adele", "Taylor Swift", "Celine Dion"], correct: 2, category: "pop_culture" }
+        ];
+
+        // ==========================================
+        // GAME STATE
+        // ==========================================
+
+        const backgrounds = {
+            gaming: "file:///C:/Users/rohit/.gemini/antigravity/brain/71f6d77c-4b13-42d7-981d-f9c6fbc47d1d/bg_gaming_1765928044505.png",
+            harry_potter: "file:///C:/Users/rohit/.gemini/antigravity/brain/71f6d77c-4b13-42d7-981d-f9c6fbc47d1d/bg_harry_potter_1765928062466.png",
+            game_of_thrones: "file:///C:/Users/rohit/.gemini/antigravity/brain/71f6d77c-4b13-42d7-981d-f9c6fbc47d1d/bg_game_of_thrones_1765928079890.png",
+            pop_culture: "file:///C:/Users/rohit/.gemini/antigravity/brain/71f6d77c-4b13-42d7-981d-f9c6fbc47d1d/bg_pop_culture_1765928101277.png",
+            books: "file:///C:/Users/rohit/.gemini/antigravity/brain/71f6d77c-4b13-42d7-981d-f9c6fbc47d1d/bg_books_1765928119795.png",
+            default: ""
+        };
+
+        // ==========================================
+        // AUDIO SYSTEM (Web Audio API)
+        // ==========================================
+        class SoundManager {
+            constructor() {
+                this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                this.masterGain = this.ctx.createGain();
+                this.masterGain.gain.value = 0.2; // Moderate volume
+                this.masterGain.connect(this.ctx.destination);
+                this.initialized = false;
+            }
+
+            init() {
+                if (!this.initialized) {
+                    this.ctx.resume();
+                    this.initialized = true;
+                }
+            }
+
+            playTone(freq, type, duration, startTime = 0) {
+                if (this.ctx.state === 'suspended') this.ctx.resume();
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = type;
+                osc.frequency.value = freq;
+                osc.connect(gain);
+                gain.connect(this.masterGain);
+
+                const now = this.ctx.currentTime + startTime;
+                gain.gain.setValueAtTime(0.3, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + duration);
+
+                osc.start(now);
+                osc.stop(now + duration);
+            }
+
+            playHover() {
+                // High blip
+                this.playTone(800, 'sine', 0.05);
+            }
+
+            playClick() {
+                // Mechanical click
+                this.playTone(400, 'square', 0.05);
+            }
+
+            playSuccess() {
+                // Major arpeggio
+                this.playTone(523.25, 'sine', 0.2, 0); // C5
+                this.playTone(659.25, 'sine', 0.2, 0.1); // E5
+                this.playTone(783.99, 'sine', 0.4, 0.2); // G5
+            }
+
+            playFailure() {
+                // Descending dissonance
+                this.playTone(150, 'sawtooth', 0.3, 0);
+                this.playTone(100, 'sawtooth', 0.4, 0.15);
+            }
+
+            playSpin() {
+                // Ticking sound
+                this.playTone(1200, 'triangle', 0.03);
+            }
+        }
+
+        const soundManager = new SoundManager();
+
+        // Global Event Delegation for Audio
+        document.addEventListener('click', (e) => {
+            soundManager.init(); // Ensure context is running
+            if (e.target.closest('button')) {
+                soundManager.playClick();
+            }
+        });
+
+        document.addEventListener('mouseover', (e) => {
+            if (e.target.closest('button') && !e.target.closest('button').disabled) {
+                soundManager.playHover();
+            }
+        });
+
+        let availableTeams = [];
+        let usedQuestions = []; // Global store of used question IDs
+        let currentTeam = null;
+        let currentTeamQuestionCount = 0;
+        const maxQuestionsPerRound = 3;
+
+        // DOM ELEMENTS
+        const startScreen = document.getElementById('start-screen');
+        const teamSelectScreen = document.getElementById('team-select-screen');
+        const gameScreen = document.getElementById('game-screen');
+        const endScreen = document.getElementById('end-screen');
+
+        // Team Select DOM
+        const teamDisplay = document.getElementById('team-display');
+        const rollTeamBtn = document.getElementById('roll-team-btn');
+        const startRoundBtn = document.getElementById('start-round-btn');
+        const teamsRemainingCount = document.getElementById('teams-remaining-count');
+
+        // Game DOM
+        const randDisplay = document.getElementById('randomizer-display');
+        const quizArea = document.getElementById('quiz-area');
+        const qText = document.getElementById('question-text');
+        const optsContainer = document.getElementById('options-container');
+        const nextQBtn = document.getElementById('next-q-btn');
+        const endRoundBtn = document.getElementById('end-round-btn');
+        const timerBar = document.getElementById('timer-bar');
+        const feedbackMsg = document.getElementById('feedback-msg');
+        const currentTeamNameDisplay = document.getElementById('current-team-name');
+        const qProgressDisplay = document.getElementById('q-progress');
+
+        // ==========================================
+        // INITIALIZATION LOGIC
+        // ==========================================
+
+        // Populate inputs on load
+        window.onload = function () {
+            updateTeamInputs();
+        };
+
+        function updateTeamInputs() {
+            const countInput = document.getElementById('team-count-input');
+            const container = document.getElementById('team-names-container');
+            let count = parseInt(countInput.value);
+
+            // Limit bounds
+            if (count < 1) count = 1;
+            if (count > 20) count = 20;
+            countInput.value = count;
+
+            container.innerHTML = ''; // Clear existing
+
+            for (let i = 1; i <= count; i++) {
+                const div = document.createElement('div');
+                div.className = "flex items-center gap-2";
+
+                const label = document.createElement('span');
+                label.className = "text-xs text-gray-400 w-6 font-mono opacity-60";
+                label.innerText = i < 10 ? `0${i}` : i;
+
+                const input = document.createElement('input');
+                input.type = "text";
+                input.className = "team-name-input flex-1 bg-gray-900 border border-gray-700 rounded px-3 py-2 text-sm text-white focus:border-indigo-500 focus:outline-none placeholder-gray-600 transition-colors";
+                input.placeholder = `Team ${i} Name`;
+
+                // Set default values for first 3 inputs if requested
+                if (i === 1) input.value = "Test1";
+                if (i === 2) input.value = "Test2";
+                if (i === 3) input.value = "Test3";
+
+                div.appendChild(label);
+                div.appendChild(input);
+                container.appendChild(div);
+            }
+        }
+
+        function startGame() {
+            // Collect Team Names
+            const inputs = document.querySelectorAll('.team-name-input');
+            availableTeams = [];
+
+            inputs.forEach((input, index) => {
+                const name = input.value.trim() || `Team ${index + 1}`;
+                availableTeams.push(name);
+            });
+
+            goToTeamSelect();
+        }
+
+        // ==========================================
+        // NAVIGATION & LOGIC
+        // ==========================================
+
+        function goToTeamSelect() {
+            startScreen.classList.add('hidden');
+            gameScreen.classList.add('hidden');
+            teamSelectScreen.classList.remove('hidden');
+
+            // Set background to gaming by default for team select, or keep current if set
+            if (!document.body.style.backgroundImage) {
+                document.body.style.backgroundImage = `url('${backgrounds.gaming}')`;
+            }
+
+            resetTeamSelectUI();
+        }
+
+        function resetTeamSelectUI() {
+            teamDisplay.innerText = "READY?";
+            rollTeamBtn.classList.remove('hidden');
+            startRoundBtn.classList.add('hidden');
+            teamsRemainingCount.innerText = availableTeams.length;
+
+            if (availableTeams.length === 0) {
+                endGame();
+            }
+        }
+
+        // --- TEAM SELECTION ---
+
+        function rollForTeam() {
+            if (availableTeams.length === 0) return;
+
+            rollTeamBtn.disabled = true;
+            let counter = 0;
+            const maxRolls = 20;
+
+            // Animation
+            const interval = setInterval(() => {
+                const randomTemp = availableTeams[Math.floor(Math.random() * availableTeams.length)];
+                teamDisplay.innerText = randomTemp;
+                soundManager.playSpin(); // Sound effect
+                counter++;
+
+                if (counter > maxRolls) {
+                    clearInterval(interval);
+                    finalizeTeamSelection();
+                }
+            }, 80);
+        }
+
+        function finalizeTeamSelection() {
+            // Pick random team and remove from array
+            const randomIndex = Math.floor(Math.random() * availableTeams.length);
+            currentTeam = availableTeams[randomIndex];
+            availableTeams.splice(randomIndex, 1); // Remove it
+
+            teamDisplay.innerText = currentTeam + "\nSELECTED";
+            teamsRemainingCount.innerText = availableTeams.length;
+
+            rollTeamBtn.classList.add('hidden');
+            rollTeamBtn.disabled = false;
+            startRoundBtn.classList.remove('hidden');
+        }
+
+        function startRound() {
+            currentTeamQuestionCount = 0;
+            teamSelectScreen.classList.add('hidden');
+            gameScreen.classList.remove('hidden');
+
+            currentTeamNameDisplay.innerText = currentTeam;
+
+            // Start the flow for the first question
+            prepareNextQuestion();
+        }
+
+        // --- GAMEPLAY / QUESTION ROUNDS ---
+
+        function prepareNextQuestion() {
+            currentTeamQuestionCount++;
+
+            if (currentTeamQuestionCount > maxQuestionsPerRound) {
+                finishTeamRound();
+                return;
+            }
+
+            // Update UI
+            qProgressDisplay.innerText = `Q: ${currentTeamQuestionCount}/${maxQuestionsPerRound}`;
+
+            // Hide previous question / Show Randomizer waiting state
+            quizArea.classList.add('hidden');
+            randDisplay.classList.remove('hidden');
+            randDisplay.innerText = "CLICK TO SPIN";
+
+            // Buttons logic
+            nextQBtn.classList.add('hidden');
+            endRoundBtn.classList.add('hidden');
+
+            // Spin Button
+            const spinBtn = document.createElement('button');
+            spinBtn.id = 'spin-btn';
+            spinBtn.innerText = "SPIN RANDOMIZER";
+            spinBtn.className = "btn-primary"; // Use new class
+            spinBtn.onclick = () => {
+                spinBtn.remove();
+                runQuestionRandomizer();
+            };
+
+            // Clear control panel and add spin button
+            const panel = document.querySelector('#game-screen .control-panel');
+            panel.innerHTML = '';
+            panel.appendChild(spinBtn);
+        }
+
+        function runQuestionRandomizer() {
+            let speed = 50;
+            let counter = 0;
+            const maxCounts = 20;
+
+            const interval = setInterval(() => {
+                // Visual number shuffle
+                const rNum = Math.floor(Math.random() * questionBank.length) + 1;
+                randDisplay.innerText = rNum;
+                soundManager.playSpin(); // Sound effect
+                counter++;
+
+                if (counter > maxCounts) {
+                    clearInterval(interval);
+                    selectAndShowQuestion();
+                }
+            }, speed);
+        }
+
+        function selectAndShowQuestion() {
+            // Filter available questions (Global no repeats)
+            let availableIndices = questionBank.map((_, index) => index)
+                .filter(index => !usedQuestions.includes(index));
+
+            if (availableIndices.length === 0) {
+                randDisplay.innerText = "EMPTY";
+                alert("No more unique questions available! Resetting pool.");
+                usedQuestions = [];
+                availableIndices = questionBank.map((_, index) => index);
+            }
+
+            const randIndex = availableIndices[Math.floor(Math.random() * availableIndices.length)];
+            usedQuestions.push(randIndex);
+
+            const qData = questionBank[randIndex];
+
+            randDisplay.innerText = `Q#${qData.id}`;
+
+            // Set Background based on category
+            if (qData.category && backgrounds[qData.category]) {
+                document.body.style.backgroundImage = `url('${backgrounds[qData.category]}')`;
+            } else {
+                document.body.style.backgroundImage = `url('${backgrounds.default}')`;
+            }
+
+            setTimeout(() => {
+                displayQuestionContent(qData);
+            }, 1000);
+        }
+
+        function displayQuestionContent(qData) {
+            randDisplay.classList.add('hidden'); // Hide the number
+            quizArea.classList.remove('hidden'); // Show Q box
+
+            // Reset state
+            timerBar.style.width = '0%';
+            timerBar.style.transition = 'none';
+            optsContainer.innerHTML = '';
+            feedbackMsg.innerText = '';
+            qText.innerText = qData.q;
+
+            // Generate Options
+            qData.options.forEach((opt, index) => {
+                const btn = document.createElement('button');
+                btn.innerHTML = `<span>${opt}</span>`;
+                btn.disabled = true;
+                btn.onclick = () => handleAnswer(index, qData.correct, btn);
+                optsContainer.appendChild(btn);
+            });
+
+            // Timer Animation
+            setTimeout(() => {
+                timerBar.style.transition = 'width 3s linear';
+                timerBar.style.width = '100%';
+            }, 100);
+
+            // Unlock Buttons
+            setTimeout(() => {
+                const buttons = optsContainer.querySelectorAll('button');
+                buttons.forEach(b => {
+                    b.disabled = false;
+                    b.style.cursor = 'pointer';
+                });
+                feedbackMsg.innerText = "SELECT ANSWER";
+            }, 3000);
+        }
+
+        function handleAnswer(selectedIndex, correctIndex, btnElement) {
+            const allBtns = optsContainer.querySelectorAll('button');
+            allBtns.forEach(b => b.disabled = true); // Lock all
+
+            if (selectedIndex === correctIndex) {
+                btnElement.style.background = 'var(--success-color)';
+                btnElement.style.color = '#fff';
+                btnElement.style.borderColor = 'var(--success-color)';
+                feedbackMsg.innerText = "CORRECT!";
+                feedbackMsg.style.color = 'var(--success-color)';
+                soundManager.playSuccess();
+            } else {
+                btnElement.style.background = 'var(--error-color)';
+                btnElement.style.color = '#fff';
+                btnElement.style.borderColor = 'var(--error-color)';
+                feedbackMsg.innerText = "INCORRECT";
+                feedbackMsg.style.color = 'var(--error-color)';
+                soundManager.playFailure();
+
+                // Show correct
+                allBtns[correctIndex].style.background = 'var(--success-color)';
+                allBtns[correctIndex].style.color = '#fff';
+                allBtns[correctIndex].style.borderColor = 'var(--success-color)';
+            }
+
+            // Restore Control Panel buttons
+            const panel = document.querySelector('#game-screen .control-panel');
+            panel.innerHTML = '';
+
+            // Decide which button to show
+            if (currentTeamQuestionCount < maxQuestionsPerRound) {
+                // Show Next Question Button
+                const nextBtn = document.createElement('button');
+                nextBtn.innerText = "NEXT QUESTION \u2192";
+                nextBtn.className = "btn-primary";
+                nextBtn.onclick = prepareNextQuestion;
+                panel.appendChild(nextBtn);
+            } else {
+                // Show Finish Round Button
+                const finishBtn = document.createElement('button');
+                finishBtn.innerText = "RETURN TO TEAM SELECT";
+                finishBtn.onclick = finishTeamRound;
+                panel.appendChild(finishBtn);
+            }
+        }
+
+        function nextQuestionInRound() {
+            prepareNextQuestion();
+        }
+
+        function finishTeamRound() {
+            goToTeamSelect();
+        }
+
+        function endGame() {
+            teamSelectScreen.classList.add('hidden');
+            endScreen.classList.remove('hidden');
+        }
+
+    </script>
+</body>
+
+</html>

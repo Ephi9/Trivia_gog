@@ -389,12 +389,9 @@
         // ==========================================
 
         const backgrounds = {
-            gaming: "file:///C:/Users/rohit/.gemini/antigravity/brain/71f6d77c-4b13-42d7-981d-f9c6fbc47d1d/bg_gaming_1765928044505.png",
-            harry_potter: "file:///C:/Users/rohit/.gemini/antigravity/brain/71f6d77c-4b13-42d7-981d-f9c6fbc47d1d/bg_harry_potter_1765928062466.png",
-            game_of_thrones: "file:///C:/Users/rohit/.gemini/antigravity/brain/71f6d77c-4b13-42d7-981d-f9c6fbc47d1d/bg_game_of_thrones_1765928079890.png",
-            pop_culture: "file:///C:/Users/rohit/.gemini/antigravity/brain/71f6d77c-4b13-42d7-981d-f9c6fbc47d1d/bg_pop_culture_1765928101277.png",
-            books: "file:///C:/Users/rohit/.gemini/antigravity/brain/71f6d77c-4b13-42d7-981d-f9c6fbc47d1d/bg_books_1765928119795.png",
-            default: ""
+            teamSelect: "./assets/bg_team_select.png",
+            randomizer: "./assets/bg_randomizer.png",
+            question: "./assets/bg_question.png"
         };
 
         // ==========================================
@@ -515,6 +512,8 @@
         // Populate inputs on load
         window.onload = function () {
             updateTeamInputs();
+            // Set initial background for start screen
+            document.body.style.backgroundImage = `url('${backgrounds.teamSelect}')`;
         };
 
         function updateTeamInputs() {
@@ -575,10 +574,8 @@
             gameScreen.classList.add('hidden');
             teamSelectScreen.classList.remove('hidden');
 
-            // Set background to gaming by default for team select, or keep current if set
-            if (!document.body.style.backgroundImage) {
-                document.body.style.backgroundImage = `url('${backgrounds.gaming}')`;
-            }
+            // Set background to team select
+            document.body.style.backgroundImage = `url('${backgrounds.teamSelect}')`;
 
             resetTeamSelectUI();
         }
@@ -660,6 +657,9 @@
             randDisplay.classList.remove('hidden');
             randDisplay.innerText = "CLICK TO SPIN";
 
+            // Set Background to Randomizer
+            document.body.style.backgroundImage = `url('${backgrounds.randomizer}')`;
+
             // Buttons logic
             nextQBtn.classList.add('hidden');
             endRoundBtn.classList.add('hidden');
@@ -718,12 +718,8 @@
 
             randDisplay.innerText = `Q#${qData.id}`;
 
-            // Set Background based on category
-            if (qData.category && backgrounds[qData.category]) {
-                document.body.style.backgroundImage = `url('${backgrounds[qData.category]}')`;
-            } else {
-                document.body.style.backgroundImage = `url('${backgrounds.default}')`;
-            }
+            // Set Background to Question Background
+            document.body.style.backgroundImage = `url('${backgrounds.question}')`;
 
             setTimeout(() => {
                 displayQuestionContent(qData);
